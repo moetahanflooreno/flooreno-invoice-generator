@@ -38,51 +38,64 @@ def create_invoice_pdf(client_name, phone, items, payment_type, subtotal, tax, t
 
     # Items Table (Updated columns for Qty, Line Total Pre-Tax, and Line Total Post-Tax)
     # Changed header of the last column to be clearer.
-    data = [["Item Description", "Unit Price", "Qty", "Sub Total", f"Total After Tax ({TAX_RATE*100:.0f}%) ($)"]]
-    
-    # items now contains (item, price, quantity)
+# --- Styles for wrapped text and smaller fonts ---
+    small_style = styles["Normal"]
+    small_style.fontSize = 8
+    small_style.leading = 10
+
+    # Items Table (Updated columns with wrapping and smaller text)
+    data = [[
+        Paragraph("<b>Item Description</b>", small_style),
+        Paragraph("<b>Unit Price</b>", small_style),
+        Paragraph("<b>Qty</b>", small_style),
+        Paragraph("<b>SubTotal</b>", small_style),
+        Paragraph(f"<b>Total</b>", small_style)
+    ]]
+
+    # Populate items (with wrapped descriptions)
     for item, price, quantity in items:
         line_total_pre_tax = price * quantity
         line_total_post_tax = line_total_pre_tax * (1 + TAX_RATE)
+
         data.append([
-            item, 
-            f"{price:.2f}", 
-            str(quantity), 
-            f"{line_total_pre_tax:.2f}", 
-            f"{line_total_post_tax:.2f}"
+            Paragraph(item, small_style),   # WRAPPED TEXT
+            Paragraph(f"{price:.2f}", small_style),
+            Paragraph(str(quantity), small_style),
+            Paragraph(f"{line_total_pre_tax:.2f}", small_style),
+            Paragraph(f"{line_total_post_tax:.2f}", small_style)
         ])
 
-    # --- Simplified Summary Rows (Subtotal, Tax, Total Due) ---
-    # We use columns 3 and 4 for the summary details and values
-    # data.append(["", "", "", "", ""]) # Blank separator
-    data.append(["", "", "", "Subtotal", f"{subtotal:.2f}"]) 
-    data.append(["", "", "", f"Tax ({TAX_RATE*100:.0f}%)", f"{tax:.2f}"]) 
-    data.append(["", "", "", "TOTAL DUE", f"{total:.2f}"]) 
+    # Summary rows
+    data.append(["", "", "", Paragraph("Subtotal", small_style), Paragraph(f"{subtotal:.2f}", small_style)])
+    data.append(["", "", "", Paragraph(f"Tax ({TAX_RATE*100:.0f}%)", small_style), Paragraph(f"{tax:.2f}", small_style)])
+    data.append(["", "", "", Paragraph("<b>TOTAL</b>", small_style), Paragraph(f"<b>{total:.2f}</b>", small_style)])
 
-    # ColWidths adjusted for 5 columns
-    table = Table(data, colWidths=[150, 60, 40, 70, 80])
+    # Enlarged table width for better spacing
+    table = Table(data, colWidths=[220, 60, 40, 70, 80])
+
+    item_count = len(items)
+    grid_end_row = item_count
+
     table.setStyle(TableStyle([
-        # Header Row Styling
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),  # Smaller font
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        
-        # Item Rows and Grid
-        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'), # Align all dollar/number values to the right
-        ('INNERGRID', (0, 0), (-1, -4), 0.25, colors.black), # Items only grid
-        ('BOX', (0, 0), (-1, -1), 0.25, colors.black),
 
-        # Summary Styling
-        ('SPAN', (0, -3), (2, -3)), # Span cols 0-2 for Subtotal row
-        ('SPAN', (0, -2), (2, -2)), # Span cols 0-2 for Tax row
-        ('SPAN', (0, -1), (2, -1)), # Span cols 0-2 for Total Due row
-        
-        # Line above Subtotal
-        ('LINEABOVE', (3, -3), (4, -3), 0.5, colors.black), 
-        
-        # Final Total Highlighting
-        ('FONTNAME', (3, -1), (4, -1), 'Helvetica-Bold'), # Bold Total Due label and value
-        ('BACKGROUND', (3, -1), (4, -1), colors.lightgrey), # Highlight final total row
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),  # Allow wrapping
+
+        ('INNERGRID', (0, 0), (-1, grid_end_row), 0.25, colors.black),
+        ('BOX', (0, 0), (-1, grid_end_row), 0.25, colors.black),
+
+        ('SPAN', (0, -3), (2, -3)),
+        ('SPAN', (0, -2), (2, -2)),
+        ('SPAN', (0, -1), (2, -1)),
+
+        ('LINEABOVE', (3, -3), (4, -3), 0.5, colors.black),
+
+        ('FONTNAME', (3, -1), (4, -1), 'Helvetica-Bold'),
+        ('BACKGROUND', (3, -1), (4, -1), colors.lightgrey),
     ]))
 
     elements.append(table)
@@ -209,7 +222,7 @@ if st.session_state.invoice_items:
     header_cols[0].markdown("**Description**")
     header_cols[1].markdown("**Unit Price ($)**")
     header_cols[2].markdown("**Quantity**")
-    header_cols[3].markdown("**Line Total ($)**")
+    header_cols[3].markdown("**Total ($)**")
     header_cols[4].markdown(f"**Total After Tax ({TAX_RATE*100:.0f}%)**")
 
     # Editable list loop
