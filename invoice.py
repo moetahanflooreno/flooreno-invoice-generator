@@ -199,12 +199,15 @@ temp_quantity = col_qty_in.number_input(
 )
 
 # Add item button uses the callback function
-col_add_btn.button(
-    "➕ Add", 
-    key="add_item_btn", 
-    use_container_width=True, 
-    on_click=add_item_and_reset # <-- FIX: Use callback to modify state safely
-)
+with col_add_btn:
+    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+    st.button(
+        "➕ Add",
+        key="add_item_btn",
+        use_container_width=True,
+        on_click=add_item_and_reset
+    )
+
 
 st.markdown("---")
 
